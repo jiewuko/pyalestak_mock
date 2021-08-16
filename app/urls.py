@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import path
 
-from landing.views import HomePageView
+from app.landing.views import HomePageView
 
 urlpatterns = [
     path('admin/', admin.site.urls),

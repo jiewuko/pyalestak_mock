@@ -1,0 +1,60 @@
+version: "3"
+
+services:
+
+  postgres:
+    image: postgres:latest
+    hostname: postgres
+    restart: "always"
+    networks:
+      - statistics
+    volumes:
+      - postgres:${POSTGRES_DATA}
+    ports:
+      - ${POSTGRES_LISTEN_PORT}:${POSTGRES_LISTEN_PORT}
+    env_file: docker-compose-env/postgres.env
+
+  app:
+    build:
+      context: .
+      args:
+        WITH_DEV_PACKAGES: ${WITH_DEV_PACKAGES}
+        BUILD_STATIC: ${BUILD_STATIC}
+    image: ${SERVICE_IMAGE}
+    hostname: statistics
+    restart: "always"
+    user: bitnet
+    volumes:
+      - static:/var/app/static
+    networks:
+      - statistics
+    depends_on:
+      - postgres
+    env_file: docker-compose-env/app.env
+
+  nginx:
+    image: nginx
+    hostname: nginx
+    restart: "always"
+    volumes:
+      - ./scripts:/tmp/scripts
+      - static:/var/app/static
+      - /etc/letsencrypt/archive/dev.azscore.pw-0001:/var/app/ssl_cert
+    command: /bin/bash -c "bash /tmp/scripts/subst_nginx.sh;  exec nginx -g 'daemon off;'"
+    networks:
+      - statistics
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+      - ${APP_SSL_PORT}:${APP_SSL_PORT}
+    depends_on:
+      - app
+    env_file: docker-compose-env/nginx.env
+
+networks:
+  statistics:
+    driver: bridge
+
+volumes:
+  postgres:
+  static:
+  redis:
